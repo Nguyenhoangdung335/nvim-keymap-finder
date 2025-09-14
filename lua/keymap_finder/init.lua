@@ -21,6 +21,7 @@ function M.get_keymaps()
                     mode = mode_name,
                     lhs = keymap.lhs,
                     rhs = keymap.rhs,
+                    callback = keymap.callback,
                     desc = keymap.desc or "",
                     opts = {
                         noremap = keymap.noremap,
@@ -57,10 +58,19 @@ function M.pick_keymap()
             finder = finders.new_table({
                 results = keymaps,
                 entry_maker = function(entry)
+                    local target 
+                    if entry.rhs and entry.rhs ~= "" then
+                        target = entry.rhs
+                    elseif entry.callback then
+                        target = "<lua Function>"
+                    else
+                        target = "<N/A>"
+                    end
+
                     return {
                         value = entry,
-                        display = string.format("[%s] %s -> %s %s", entry.mode, entry.lhs, entry.rhs, entry.desc),
-                        ordinal = entry.lhs .. " " .. entry.rhs .. " " .. entry.desc,
+                        display = string.format("<b>[%s]</b> %s -> %s  <i>(%s)</i>", entry.mode, entry.lhs, target, entry.desc),
+                        ordinal = entry.mode .. " " .. entry.lhs .. " " .. entry.desc,
                     }
                 end,
             }),
@@ -70,7 +80,8 @@ function M.pick_keymap()
                 -- It will be the default action for <CR> in normal mode.
                 actions.select_default:replace(function()
                     local selection = action_state.get_selected_entry()
-                    vim.notify(string.format("LHS: %s | RHS: %s", selection.value.lhs, selection.value.rhs))
+                    local target = selection.value.rhs or "<Lua Function>"
+                    vim.notify(string.format("LHS: %s | Target: %s", selection.value.lhs, target))
                 end)
 
                 -- Add a more powerful mapping for <C-e> to "execute" the keymap
